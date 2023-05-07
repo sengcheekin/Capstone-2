@@ -1,0 +1,53 @@
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+import glob
+
+
+def get_file_name(path):
+    basename = os.path.basename(path)
+    onlyname = os.path.splitext(basename)[0]
+    return onlyname
+
+
+def gen_haze(img, depth_img):
+    # needed to make it so darker areas = further distance
+    max_depth_value = np.max(depth_img)
+    depth_img = max_depth_value - depth_img
+
+    depth_img_3c = np.zeros_like(img)
+    depth_img_3c[:, :, 0] = depth_img
+    depth_img_3c[:, :, 1] = depth_img
+    depth_img_3c[:, :, 2] = depth_img
+
+    beta = random.randint(100, 150) / 100
+    norm_depth_img = depth_img_3c / 255
+    trans = np.exp(-norm_depth_img * beta)
+
+    A = 255
+    hazy = img * trans + A * (1 - trans)
+    hazy = np.array(hazy, dtype=np.uint8)
+
+    return hazy
+
+
+img_path = "datasets/data/train/test"
+depth_path = "datasets/data/train/depth_images"
+ext = "jpg"
+
+# Search the folder for images
+paths = glob.glob(os.path.join(img_path, "*.{}".format(ext)))
+output_dir = "datasets\data/train\hazy"
+
+
+for path in paths:
+    fname = get_file_name(path)
+    img = plt.imread(path)
+    depth_img_path = os.path.join(depth_path, "{}_depth.jpg".format(fname))
+    depth_img = plt.imread(depth_img_path)
+
+    hazy = gen_haze(img, depth_img)
+    output_path = os.path.join(output_dir, "{}_hazy.jpg".format(get_file_name(path)))
+    plt.imsave(output_path, hazy)
+    print("Saved {}".format(output_path))
