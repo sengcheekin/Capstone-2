@@ -11,7 +11,7 @@ def get_file_name(path):
     return onlyname
 
 
-def gen_haze(img, depth_img, beta):
+def gen_haze(img, depth_img):
     # needed to make it so darker areas = further distance
     max_depth_value = np.max(depth_img)
     depth_img = max_depth_value - depth_img
@@ -21,6 +21,7 @@ def gen_haze(img, depth_img, beta):
     depth_img_3c[:, :, 1] = depth_img
     depth_img_3c[:, :, 2] = depth_img
 
+    beta = random.uniform(1.0, 1.5)
     norm_depth_img = depth_img_3c / 255
     trans = np.exp(-norm_depth_img * beta)
 
@@ -31,22 +32,22 @@ def gen_haze(img, depth_img, beta):
     return hazy
 
 
-img_path = "datasets/data/train/test"
-depth_path = "datasets/data/train/depth_images"
+img_path = "datasets/data/test/test/clean"
+depth_path = "datasets/data/test/depth_images"
 ext = "jpg"
 
 # Search the folder for images
 paths = glob.glob(os.path.join(img_path, "*.{}".format(ext)))
-output_dir = "datasets\data/train\hazy"
+output_dir = "datasets\data/test/test/hazy"
 
 
-for path in paths:
-    fname = get_file_name(path)
-    img = plt.imread(path)
-    depth_img_path = os.path.join(depth_path, "{}_depth.jpg".format(fname))
-    depth_img = plt.imread(depth_img_path)
+# for path in paths:
+#     fname = get_file_name(path)
+#     img = plt.imread(path)
+#     depth_img_path = os.path.join(depth_path, "{}_depth.jpg".format(fname))
+#     depth_img = plt.imread(depth_img_path)
 
-    hazy = gen_haze(img, depth_img)
-    output_path = os.path.join(output_dir, "{}_hazy.jpg".format(get_file_name(path)))
-    plt.imsave(output_path, hazy)
-    print("Saved {}".format(output_path))
+#     hazy = gen_haze(img, depth_img)
+#     output_path = os.path.join(output_dir, "{}_hazy.jpg".format(get_file_name(path)))
+#     plt.imsave(output_path, hazy)
+#     print("Saved {}".format(output_path))
