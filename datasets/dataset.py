@@ -10,19 +10,20 @@ import os
 import random
 from PIL import Image
 import matplotlib.pyplot as plt
-from haze_synthesize import gen_haze
 
-dir_path = (
-    "D:/Documents/Semester 9/Capstone 2/Code/Capstone-2/datasets/data/train/test/clean"
-)
+# from haze_synthesize import gen_haze
 
-data_transform = transforms.Compose(
-    [
-        transforms.Resize((64, 64)),
-        transforms.RandomHorizontalFlip(0.5),
-        transforms.ToTensor(),
-    ]
-)
+# dir_path = (
+#     "D:/Documents/Semester 9/Capstone 2/Code/Capstone-2/datasets/data/train/test/clean"
+# )
+
+# data_transform = transforms.Compose(
+#     [
+#         transforms.Resize((64, 64)),
+#         transforms.RandomHorizontalFlip(0.5),
+#         transforms.ToTensor(),
+#     ]
+# )
 
 
 def plot_transformed_images(image_paths, transform, n=3, seed=42):
@@ -60,15 +61,15 @@ def plot_transformed_images(image_paths, transform, n=3, seed=42):
 # print([entry.name for entry in list(os.scandir(dir_path))])
 
 # Hyperparameters
-train_dir = "datasets/data/train/test/clean"
-test_dir = "datasets/data/test/test/clean"
+train_dir = "datasets/data/train/clean"
+test_dir = "datasets/data/test/clean"
 hazy_dir = "datasets/data/train/test/hazy"
 beta_range = [0.0, 0.6, 1.2, 1.8, 2.4, 3.0]
 train_transform = transforms.Compose(
     [
         transforms.Resize((64, 64)),
         transforms.RandomHorizontalFlip(0.5),
-        transforms.TrivialAugmentWide(num_magnitude_bins=31),
+        # transforms.TrivialAugmentWide(num_magnitude_bins=31),
         transforms.ToTensor(),
     ]
 )
@@ -117,19 +118,19 @@ class HazyDataset(Dataset):
 # train_data = HazyDataset(
 #     img_dir=train_dir, hazy_dir=hazy_dir, transform=train_transform
 # )
-train_data = datasets.ImageFolder(
-    root=os.path.dirname(train_dir), transform=train_transform, target_transform=None
-)
-test_data = datasets.ImageFolder(
-    root=os.path.dirname(test_dir), transform=test_transform
-)
+# train_data = datasets.ImageFolder(
+#     root=os.path.dirname(train_dir), transform=train_transform, target_transform=None
+# )
+# test_data = datasets.ImageFolder(
+#     root=os.path.dirname(test_dir), transform=test_transform
+# )
 
-train_dataloader = (
-    DataLoader(dataset=train_data, batch_size=1, num_workers=8, shuffle=True),
-)
-test_dataloader = (
-    DataLoader(dataset=test_data, batch_size=1, num_workers=8, shuffle=True),
-)
+# train_dataloader = (
+#     DataLoader(dataset=train_data, batch_size=1, num_workers=8, shuffle=True),
+# )
+# test_dataloader = (
+#     DataLoader(dataset=test_data, batch_size=1, num_workers=8, shuffle=True),
+# )
 
-plot_transformed_images(os.listdir(train_dir), transform=train_transform, n=3)
+# plot_transformed_images(os.listdir(train_dir), transform=train_transform, n=3)
 # print(os.listdir(train_dir))
