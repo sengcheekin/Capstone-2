@@ -172,52 +172,49 @@ else:
         for j in range(percentage_table[i]):
             batch_deblurSize.append(deblur_table[i])
     
-    # print("batch_deblurSize: " + str(batch_deblurSize))
 
-    if torch.cuda.is_available():
-        print("Using CUDNN!")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    input_image_vis = input_image_vis.to(device)
+    input_image = input_image.to(device)
+    real_frame = real_frame.to(device)
+    restored_frame = restored_frame.to(device)
+    netG.to(device)
 
-        input_image_vis = input_image_vis.cuda()
-        input_image = input_image.cuda()
-        real_frame = real_frame.cuda()
-        restored_frame = restored_frame.cuda()
-        netG = netG.cuda()
+    print(netG)
+# # Testing
+#     test_image = Image.open("datasets/data/train/hazy/aachen_000000_000019_leftImg8bit_hazy.jpg")
+#     real_frame = Image.open("datasets/data/train/clean/aachen_000000_000019_leftImg8bit.jpg")
+#     transform = transforms.Compose([
+#         transforms.Resize((256, 256)),
+#         transforms.ToTensor(),
+#     ])
+#     test_image = transform(test_image)
+#     test_image = test_image.cuda()
+#     test_image = test_image.unsqueeze_(0)
 
-    test_image = Image.open("datasets/data/train/hazy/aachen_000000_000019_leftImg8bit_hazy.jpg")
-    real_frame = Image.open("datasets/data/train/clean/aachen_000000_000019_leftImg8bit.jpg")
-    transform = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
-    ])
-    test_image = transform(test_image)
-    test_image = test_image.cuda()
-    test_image = test_image.unsqueeze_(0)
+#     real_frame = transform(real_frame)
+#     real_frame = real_frame.cuda()
 
-    real_frame = transform(real_frame)
-    real_frame = real_frame.cuda()
+#     print(test_image.shape)
+#     print(real_frame.shape)
 
-    print(test_image.shape)
-    print(real_frame.shape)
+#     for epoch in range(100):
+#         optimizer.zero_grad()
 
-    for epoch in range(1000):
-        optimizer.zero_grad()
-
-        output = netG(test_image)
-        output = torch.squeeze(output)
-        print(output.shape)
-        loss = criterion(output, real_frame)
-        loss.backward()
-        optimizer.step()
+#         output = netG(test_image)
+#         output = torch.squeeze(output)
+#         print(output.shape)
+#         loss = criterion(output, real_frame)
+#         loss.backward()
+#         optimizer.step()
     
-        print('Epoch {}, loss {}'.format(epoch, loss.item()))
+#         print('Epoch {}, loss {}'.format(epoch, loss.item()))
     
-    # output = torch.squeeze(output)
-    output = output.detach().cpu()
-    print(type(output))
-    tensor_to_image = transforms.ToPILImage()
-    final_output = tensor_to_image(output)
-    final_output.show()
+#     output = output.detach().cpu()
+#     print(type(output))
+#     tensor_to_image = transforms.ToPILImage()
+#     final_output = tensor_to_image(output)
+#     final_output.show()
 
-    # plt.imshow(  output.permute(1, 2, 0)  )
 
 
