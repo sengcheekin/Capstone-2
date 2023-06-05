@@ -62,14 +62,11 @@ def plot_transformed_images(image_paths, transform, n=3, seed=42):
 
 # Hyperparameters
 train_dir = "datasets/data/train/clean"
-test_dir = "datasets/data/test/clean"
-hazy_dir = "datasets/data/train/test/hazy"
+hazy_dir = "datasets/data/train/hazy"
 beta_range = [0.0, 0.6, 1.2, 1.8, 2.4, 3.0]
 train_transform = transforms.Compose(
     [
-        transforms.Resize((64, 64)),
-        transforms.RandomHorizontalFlip(0.5),
-        # transforms.TrivialAugmentWide(num_magnitude_bins=31),
+        transforms.Resize((256, 256)),
         transforms.ToTensor(),
     ]
 )
@@ -98,16 +95,16 @@ class HazyDataset(Dataset):
         self.classes, self.class_idx = get_classes(img_dir)
 
     def __len__(self):
+        print("img_dir:" + str(len(os.listdir(self.img_dir))), "hazy_dir:" + str(len(os.listdir(self.hazy_dir))))
         return len(os.listdir(self.img_dir))
 
     def __getitem__(self, index):
         # TODO: Determine if seperate directories for different levels of haze is needed
         img_path = os.path.join(self.img_dir, os.listdir(self.img_dir)[index])
         hazy_path = os.path.join(self.hazy_dir, os.listdir(self.hazy_dir)[index])
-        # img = cv.imread(img_path)
-        # hazy = cv.imread(hazy_path)
-        img = cv.imread(img_path)
-        hazy = cv.imread(hazy_path)
+        print(index)
+        img = Image.open(img_path)
+        hazy = Image.open(hazy_path)
 
         if self.transform:
             return self.transform(img), self.transform(hazy)
@@ -115,15 +112,42 @@ class HazyDataset(Dataset):
         return img, hazy
 
 
-# train_data = HazyDataset(
-#     img_dir=train_dir, hazy_dir=hazy_dir, transform=train_transform
-# )
+train_data_custom = HazyDataset(
+    img_dir=train_dir, hazy_dir=hazy_dir, transform=train_transform
+)
+
+train_dataloader_custom = DataLoader(train_data_custom, batch_size=100, num_workers=0 ,shuffle=True)
+
+def display_random_images(dataset, n=3, seed=42):
+    random.seed(seed)
+    random_idx = random.sample(range(len(dataset)), k=n)
+    for idx in random_idx:
+        img, hazy = dataset[idx]
+        fig, ax = plt.subplots(1, 2)
+        ax[0].imshow(img.permute(1,2,0))
+        ax[0].set_title(f"Original \nSize: {img.shape}")
+        ax[0].axis("off")
+
+        # Transform and plot image
+        # Note: permute() will change shape of image to suit matplotlib
+        # (PyTorch default is [C, H, W] but Matplotlib is [H, W, C])
+        ax[1].imshow(hazy.permute(1,2,0))
+        ax[1].set_title(f"Hazy \nSize: {hazy.shape}")
+        ax[1].axis("off")
+
+        fig.suptitle(f"Class: oui", fontsize=16)
+        # fig.suptitle(f"Class: {image_path.parent.stem}", fontsize=16)
+        plt.show()
+
+# display_random_images(train_data_custom, n=3)
 # train_data = datasets.ImageFolder(
 #     root=os.path.dirname(train_dir), transform=train_transform, target_transform=None
 # )
+
 # test_data = datasets.ImageFolder(
-#     root=os.path.dirname(test_dir), transform=test_transform
+#     root=os.path.dirname(hazy_dir), transform=test_transform
 # )
+
 
 # train_dataloader = (
 #     DataLoader(dataset=train_data, batch_size=1, num_workers=8, shuffle=True),
