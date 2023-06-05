@@ -32,22 +32,22 @@ def gen_haze(img, depth_img):
     return hazy
 
 
-img_path = "datasets/data/test/test/clean"
-depth_path = "datasets/data/test/depth_images"
+img_path = "datasets/data/train/clean"
+depth_path = "datasets/data/train/depth_images"
 ext = "jpg"
 
 # Search the folder for images
 paths = glob.glob(os.path.join(img_path, "*.{}".format(ext)))
-output_dir = "datasets\data/test/test/hazy"
+output_dir = "datasets/data/train/hazy"
 
 
-# for path in paths:
-#     fname = get_file_name(path)
-#     img = plt.imread(path)
-#     depth_img_path = os.path.join(depth_path, "{}_depth.jpg".format(fname))
-#     depth_img = plt.imread(depth_img_path)
+for path in paths:
+    fname = get_file_name(path)
+    img = plt.imread(path)
+    depth_img_path = os.path.join(depth_path, "{}_depth.jpg".format(fname))
+    depth_img = plt.imread(depth_img_path)
 
-#     hazy = gen_haze(img, depth_img)
-#     output_path = os.path.join(output_dir, "{}_hazy.jpg".format(get_file_name(path)))
-#     plt.imsave(output_path, hazy)
-#     print("Saved {}".format(output_path))
+    hazy = gen_haze(img, depth_img)
+    output_path = os.path.join(output_dir, "{}_hazy.jpg".format(get_file_name(path)))
+    plt.imsave(output_path, hazy)
+    print("Saved {}".format(output_path))
