@@ -1,16 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-from torch.utils.data import Dataset, DataLoader
-import cv2 as cv
 import numpy as np
-import os
 from datasets import dataset as ds
 import util
-from PIL import Image
 from matplotlib import pyplot as plt
+from torchmetrics import PeakSignalNoiseRatio as psnr
 
 opt = {
     "batch_size": 100,  # number of samples to produce
@@ -50,16 +45,8 @@ torch.manual_seed(opt["manual_seed"])
 torch.set_num_threads(1)
 torch.set_default_tensor_type("torch.FloatTensor")
 
-# Create DataLoader
-train_data = datasets.ImageFolder(
-    root=os.path.dirname(ds.train_dir),
-    transform=ds.train_transform,
-    target_transform=None,
-)
-train_dataloader = DataLoader(
-    dataset=train_data, batch_size=32, num_workers=8, shuffle=True
-)
-
+# Import DataLoader
+trainloader_custom = ds.train_dataloader_custom
 
 # Initialize the variables/weights of the neural network
 def weights_init(m):
@@ -180,9 +167,72 @@ else:
     restored_frame = restored_frame.to(device)
     netG.to(device)
 
-    print(netG)
+    # Training
+    if __name__ == "__main__":
+        print("Start training")
+        for epoch in range(50):
+            running_loss = 0.0
+
+            for clean, hazy in trainloader_custom:
+                clean = clean.to(device)
+                hazy = hazy.to(device)
+
+                optimizer.zero_grad()
+
+                output = netG(hazy)
+
+                loss = criterion(output, clean)
+                loss.backward()
+                optimizer.step()
+
+                # Multiply by the first dimension of the input tensor (batch) to scale the loss value to the batch size
+                running_loss += loss.item() * clean.size(0)
+            
+            epoch_loss = running_loss / len(trainloader_custom.dataset)
+
+            # Print progress
+            print(f"Epoch {epoch+1}/{50}.., Loss: {epoch_loss:.4f} ")
+
+        print("Finished Training")
+
+        # Save model and optimizer
+        PATH = "checkpoint.pth"
+        torch.save({
+                'epoch': epoch,
+                'model_state_dict': netG.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+                }, PATH)
+
+
+    # Visualisation
+    
+
+    # def show_images(images, nmax=64):
+    #     fig, ax = plt.subplots(figsize=(8, 8))
+    #     ax.set_xticks([]); ax.set_yticks([])
+    #     ax.imshow(make_grid((images.detach().cpu()[:nmax]), nrow=8).permute(1, 2, 0))
+    # def show_batch(dl, nmax=64):
+    #     for images in dl:
+    #         show_images(images, nmax)
+    #         break
+
+    # show_batch(output, 10)
+
+
+    # Print model's state_dict
+    # print("Model's state_dict:")
+    # for param_tensor in netG.state_dict():
+    #     print(param_tensor, "\t", netG.state_dict()[param_tensor].size())
+
+    # # Print optimizer's state_dict
+    # print("Optimizer's state_dict:")
+    # for var_name in optimizer.state_dict():
+    #     print(var_name, "\t", optimizer.state_dict()[var_name])
+    # TODO: FIGURE OUT HOW TO SAVE MODEL, HOW TO USE DATA LOADER
+
 # # Testing
-#     test_image = Image.open("datasets/data/train/hazy/aachen_000000_000019_leftImg8bit_hazy.jpg")
+    # test_image = Image.open("datasets/data/train/hazy/aachen_000000_000019_leftImg8bit_hazy.jpg")
 #     real_frame = Image.open("datasets/data/train/clean/aachen_000000_000019_leftImg8bit.jpg")
 #     transform = transforms.Compose([
 #         transforms.Resize((256, 256)),
@@ -210,11 +260,11 @@ else:
     
 #         print('Epoch {}, loss {}'.format(epoch, loss.item()))
     
-#     output = output.detach().cpu()
-#     print(type(output))
-#     tensor_to_image = transforms.ToPILImage()
-#     final_output = tensor_to_image(output)
-#     final_output.show()
+    # output = output.detach().cpu()
+    # print(type(output))
+    # tensor_to_image = transforms.ToPILImage()
+    # final_output = tensor_to_image(output)
+    # final_output.show()
 
 
 
