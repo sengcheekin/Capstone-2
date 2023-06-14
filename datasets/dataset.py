@@ -10,7 +10,7 @@ import os
 import random
 from PIL import Image
 import matplotlib.pyplot as plt
-
+from torchmetrics.functional import peak_signal_noise_ratio
 # from haze_synthesize import gen_haze
 
 # dir_path = (
@@ -63,20 +63,17 @@ import matplotlib.pyplot as plt
 # Hyperparameters
 train_dir = "datasets/data/train/clean"
 hazy_dir = "datasets/data/train/hazy"
+
+test_clean_dir = "datasets/data/test/clean"
+test_hazy_dir = "datasets/data/test/hazy"
+
 beta_range = [0.0, 0.6, 1.2, 1.8, 2.4, 3.0]
-train_transform = transforms.Compose(
+transform = transforms.Compose(
     [
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
     ]
 )
-test_transform = transforms.Compose(
-    [
-        transforms.Resize((64, 64)),
-        transforms.ToTensor(),
-    ]
-)
-
 
 def get_classes(directory):
     classes = [
@@ -86,13 +83,45 @@ def get_classes(directory):
 
     return classes, class_idx
 
+# Takes in an array of scores, and redistribute the training batches inversely proportional to the scores
+def redistribute():
+    pass
+
+def calc_avg_psnr(clean_dir, hazy_dirs, model, device):
+
+    psnr_levels = []
+
+    for hazy_dir in hazy_dirs:
+
+        print(hazy_dir)
+        val_dataset_custom = HazyDataset(clean_dir, hazy_dir, transform=transform)
+        val_dataloader_custom = DataLoader(val_dataset_custom, batch_size=10, num_workers=0, shuffle=False)
+
+        total_psnr = 0
+
+        clean_img, hazy_img = next(iter(val_dataloader_custom))
+        clean_img = clean_img.to(device)
+        hazy_img = hazy_img.to(device)
+
+        with torch.inference_mode():
+            output = model(hazy_img)
+        
+        psnr = peak_signal_noise_ratio(output, clean_img)
+        total_psnr += psnr
+
+        avg_psnr = total_psnr / len(val_dataloader_custom)
+        psnr_levels.append(avg_psnr)
+
+    print("Psnr levels: ", [psnr.item() for psnr in psnr_levels], "len", len(val_dataloader_custom))
+    return psnr_levels
+        
 
 class HazyDataset(Dataset):
     def __init__(self, img_dir, hazy_dir, transform=None):
         self.img_dir = img_dir
         self.hazy_dir = hazy_dir
         self.transform = transform
-        self.classes, self.class_idx = get_classes(img_dir)
+        self.classes, self.class_idx = get_classes(img_dir) # Not sure if get_classes is needed or not
 
     def __len__(self):
         print("img_dir:" + str(len(os.listdir(self.img_dir))), "hazy_dir:" + str(len(os.listdir(self.hazy_dir))))
@@ -102,7 +131,6 @@ class HazyDataset(Dataset):
         # TODO: Determine if seperate directories for different levels of haze is needed
         img_path = os.path.join(self.img_dir, os.listdir(self.img_dir)[index])
         hazy_path = os.path.join(self.hazy_dir, os.listdir(self.hazy_dir)[index])
-        print(index)
         img = Image.open(img_path)
         hazy = Image.open(hazy_path)
 
@@ -110,13 +138,19 @@ class HazyDataset(Dataset):
             return self.transform(img), self.transform(hazy)
 
         return img, hazy
+    
 
-
-train_data_custom = HazyDataset(
-    img_dir=train_dir, hazy_dir=hazy_dir, transform=train_transform
+train_dataset_custom = HazyDataset(
+    img_dir=train_dir, hazy_dir=hazy_dir, transform=transform
+)
+test_dataset_custom = HazyDataset(
+    img_dir=test_clean_dir, hazy_dir=test_hazy_dir, transform=transform
 )
 
-train_dataloader_custom = DataLoader(train_data_custom, batch_size=100, num_workers=0 ,shuffle=True)
+train_dataloader_custom = DataLoader(train_dataset_custom, batch_size=10, num_workers=0 ,shuffle=True)
+test_dataloader_custom = DataLoader(test_dataset_custom, batch_size=10, num_workers=0 ,shuffle=True)
+
+print(len(train_dataloader_custom.dataset))
 
 def display_random_images(dataset, n=3, seed=42):
     random.seed(seed)
@@ -139,22 +173,4 @@ def display_random_images(dataset, n=3, seed=42):
         # fig.suptitle(f"Class: {image_path.parent.stem}", fontsize=16)
         plt.show()
 
-# display_random_images(train_data_custom, n=3)
-# train_data = datasets.ImageFolder(
-#     root=os.path.dirname(train_dir), transform=train_transform, target_transform=None
-# )
-
-# test_data = datasets.ImageFolder(
-#     root=os.path.dirname(hazy_dir), transform=test_transform
-# )
-
-
-# train_dataloader = (
-#     DataLoader(dataset=train_data, batch_size=1, num_workers=8, shuffle=True),
-# )
-# test_dataloader = (
-#     DataLoader(dataset=test_data, batch_size=1, num_workers=8, shuffle=True),
-# )
-
-# plot_transformed_images(os.listdir(train_dir), transform=train_transform, n=3)
-# print(os.listdir(train_dir))
+# testing
