@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 import cv2 as cv
 import numpy as np
 import os
+import shutil
 import random
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -84,8 +85,46 @@ def get_classes(directory):
     return classes, class_idx
 
 # Takes in an array of scores, and redistribute the training batches inversely proportional to the scores
-def redistribute():
-    pass
+def redistribute(psnr_scores, sub_directories, main_directory):
+    total_psnr = sum(psnr_scores)
+
+    # Calculate the proportion inversely proportional to the psnr scores
+    proportions = [total_psnr/psnr_score for psnr_score in psnr_scores]
+
+    total_proportion = sum(proportions)
+    inverse_proportions = [proportion/total_proportion for proportion in proportions]
+
+    # Calculate number of samples to be taken from each dataset, inversely proportional to the scores
+    num_samples = [int(inverse * len(os.listdir(directory))) for inverse, directory in zip(inverse_proportions, sub_directories)]
+
+    # Calculate remaining samples to be distributed randomly
+    remaining_samples = len(os.listdir(sub_directories[0])) - sum(num_samples)
+
+    # Distribute remaining samples randomly
+    random_indices = np.random.choice(5, size=remaining_samples, replace=True)
+    for index in random_indices:
+        num_samples[index] += 1
+
+    # Copy files over from each hazy level to the main training directory according to the number of samples
+    available_files = os.listdir(sub_directories[0])
+    available_idx = [i for i in range(len(available_files))]
+    for num_sample, sub_directory in zip(num_samples, sub_directories):
+        
+        # Select random files from the sub directory based on available indices
+        random_idx = random.sample(available_idx, num_sample)
+
+        # Get the files from the random indices
+        random_files = [available_files[idx] for idx in random_idx]
+
+        random_files = random.sample(os.listdir(sub_directory), num_sample)
+        
+        # Copy the selected files to the central file directory
+        for file in random_files:
+            file_path = os.path.join(sub_directory, file)
+            shutil.copy2(file_path, main_directory)
+        
+        available_idx = list(set(available_idx) - set(random_idx))
+        print(f"Number of samples taken from {sub_directory}: {num_sample}")
 
 def calc_avg_psnr(clean_dir, hazy_dirs, model, device):
 
@@ -113,7 +152,7 @@ def calc_avg_psnr(clean_dir, hazy_dirs, model, device):
         psnr_levels.append(avg_psnr)
 
     print("Psnr levels: ", [psnr.item() for psnr in psnr_levels], "len", len(val_dataloader_custom))
-    return psnr_levels
+    return [psnr.item() for psnr in psnr_levels]
         
 
 class HazyDataset(Dataset):
