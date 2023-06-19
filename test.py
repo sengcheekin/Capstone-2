@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from torchmetrics import PeakSignalNoiseRatio
 from torchmetrics.functional import peak_signal_noise_ratio
 import os
+import time
 
 # testloader_custom = ds.test_dataloader_custom
 # checkpoint = torch.load('checkpoint.pth')
@@ -23,7 +24,7 @@ import os
 
 # test psnr calculation
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load('checkpoint.pth')
+checkpoint = torch.load('checkpoints/checkpoint.pth')
 netG.load_state_dict(checkpoint['model_state_dict'])
 netG.eval()
 val_clean_dir = "datasets/data/val/clean"
@@ -34,8 +35,24 @@ val_hazy_dirs = [
     "datasets/data/val/hazy/level4",
     "datasets/data/val/hazy/level5",
 ]
-ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
+train_hazy_dirs = [
+    "datasets/data/train/hazy/level1",
+    "datasets/data/train/hazy/level2",
+    "datasets/data/train/hazy/level3",
+    "datasets/data/train/hazy/level4",
+    "datasets/data/train/hazy/level5",
+]
+main_train_dir = "datasets/data/train/main"
+start_time = time.time()
+for i in range(20):
+    psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
+    ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
+    if set(os.listdir("datasets/data/train/hazy/level1")) != set(os.listdir("datasets/data/train/main")):
+        print("not equal")
+        print( set(os.listdir("datasets/data/train/hazy/level1")) - set(os.listdir("datasets/data/train/main")))
+        break
 
+print("--- %s seconds ---" % (time.time() - start_time))
 # # visualisation
 # batch_size = hazy_batch.size(0)
 
