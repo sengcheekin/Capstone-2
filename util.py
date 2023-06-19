@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 def load_model(model_path, gpu=False):
     model = torch.load(model_path)
     if gpu:
@@ -15,7 +14,8 @@ class Reshape(nn.Module):
         self.shape = shape
     
     def forward(self, x):
-        return x.view(self.shape)
+        print(x.size())
+        return x.reshape(self.shape)
 
 # TODO: Determine if the argument dim is needed or not in the forward function of SplitTable and JoinTable.
 #  Currently the dim is initialized as part of the class
@@ -35,3 +35,16 @@ class JoinTable(nn.Module):
     def forward(self, x):
         y = torch.cat(x, self.dim)
         return y
+
+class MyModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linears = nn.ModuleList([nn.Linear(16, 16) for i in range(512)])
+
+    def forward(self, x):
+        # ModuleList can act as an iterable, or be indexed using ints
+        for linear in self.linears:
+            x = linear(x)
+        return x
+
+
