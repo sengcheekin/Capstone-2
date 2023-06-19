@@ -6,6 +6,7 @@ from datasets import dataset as ds
 import util
 from matplotlib import pyplot as plt
 from torchmetrics import PeakSignalNoiseRatio as psnr
+import time
 
 opt = {
     "batch_size": 100,  # number of samples to produce
@@ -35,6 +36,23 @@ opt = {
     "level4": 20,       # number of training examples per batch for level 4 sub-task
     "level5": 20,       # number of training examples per batch for level 5 sub-task
 }
+
+val_clean_dir = "datasets/data/val/clean"
+val_hazy_dirs = [
+    "datasets/data/val/hazy/level1",
+    "datasets/data/val/hazy/level2",
+    "datasets/data/val/hazy/level3",
+    "datasets/data/val/hazy/level4",
+    "datasets/data/val/hazy/level5",
+]
+train_hazy_dirs = [
+    "datasets/data/train/hazy/level1",
+    "datasets/data/train/hazy/level2",
+    "datasets/data/train/hazy/level3",
+    "datasets/data/train/hazy/level4",
+    "datasets/data/train/hazy/level5",
+]
+main_train_dir = "datasets/data/train/main"
 
 # set seed
 if opt["manual_seed"] == 0:
@@ -170,7 +188,10 @@ else:
     # Training
     if __name__ == "__main__":
         print("Start training")
+        train_time = time.time()
+
         for epoch in range(50):
+            epoch_time = time.time()
             running_loss = 0.0
 
             for clean, hazy in trainloader_custom:
@@ -187,16 +208,35 @@ else:
 
                 # Multiply by the first dimension of the input tensor (batch) to scale the loss value to the batch size
                 running_loss += loss.item() * clean.size(0)
+                
             
             epoch_loss = running_loss / len(trainloader_custom.dataset)
 
+            # Save and evaluate performance on validation dataset every 5 epochs and redistribute the dataset accordingly
+            if epoch % 5 == 0:
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': netG.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': loss,
+                    }, f"checkpoints/checkpoint_ondemand_{epoch}.pth")
+
+                netG.eval()
+                psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
+                ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
+                netG.train()
+            
             # Print progress
-            print(f"Epoch {epoch+1}/{50}.., Loss: {epoch_loss:.4f} ")
+            print(f"Epoch {epoch+1}/{50}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
+
+            # TODO: Visualisation
+
 
         print("Finished Training")
+        print(f"Training time: {time.time() - train_time}s")
 
         # Save model and optimizer
-        PATH = "checkpoint.pth"
+        PATH = "checkpoints/checkpoint_ondemand_final.pth"
         torch.save({
                 'epoch': epoch,
                 'model_state_dict': netG.state_dict(),
