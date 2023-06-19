@@ -21,7 +21,7 @@ def gen_haze(img, depth_img):
     depth_img_3c[:, :, 1] = depth_img
     depth_img_3c[:, :, 2] = depth_img
 
-    beta = random.uniform(1.0, 1.5)
+    beta = random.uniform(2.4, 3.0)
     norm_depth_img = depth_img_3c / 255
     trans = np.exp(-norm_depth_img * beta)
 
@@ -38,16 +38,16 @@ ext = "jpg"
 
 # Search the folder for images
 paths = glob.glob(os.path.join(img_path, "*.{}".format(ext)))
-output_dir = "datasets/data/train/hazy"
+output_dir = "datasets/data/train/hazy/level5"
 
+if __name__ == "__main__":
+    for path in paths:
+        fname = get_file_name(path)
+        img = plt.imread(path)
+        depth_img_path = os.path.join(depth_path, "{}_depth.jpg".format(fname))
+        depth_img = plt.imread(depth_img_path)
 
-for path in paths:
-    fname = get_file_name(path)
-    img = plt.imread(path)
-    depth_img_path = os.path.join(depth_path, "{}_depth.jpg".format(fname))
-    depth_img = plt.imread(depth_img_path)
-
-    hazy = gen_haze(img, depth_img)
-    output_path = os.path.join(output_dir, "{}_hazy.jpg".format(get_file_name(path)))
-    plt.imsave(output_path, hazy)
-    print("Saved {}".format(output_path))
+        hazy = gen_haze(img, depth_img)
+        output_path = os.path.join(output_dir, "{}_hazy.jpg".format(get_file_name(path)))
+        plt.imsave(output_path, hazy)
+        print("Saved {}".format(output_path))
