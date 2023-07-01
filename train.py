@@ -155,34 +155,10 @@ else:
         "lr": opt["lr"],
         "beta1": opt["beta1"],
     }
-    optimizer = optim.Adam(netG.parameters(), lr=opt["lr"]) # opt[beta1] not used
-
-    # Initialize Data Variables
-    input_image_vis = torch.Tensor(opt["batch_size"], nc, opt["fine_size"], opt["fine_size"])
-    input_image = torch.Tensor(opt["batch_size"], nc, opt["fine_size"], opt["fine_size"])
-    real_frame = torch.Tensor(opt["batch_size"], nc, opt["fine_size"], opt["fine_size"])
-    restored_frame = torch.Tensor(opt["batch_size"], nc, opt["fine_size"], opt["fine_size"])
-    errG_12 = None
-    # TODO: timer for performance evaluation
-    # epoch_tm = torch.Timer()
-    # tm = torch.Timer()
-    # data_tm = torch.Timer()
-
-    # Construct deblur table according to training design of batches
-    deblur_table = [0.6, 1.2, 1.8, 2.4, 3.0]
-    batch_deblurSize = []
-    percentage_table = [opt["level1"], opt["level2"], opt["level3"], opt["level4"], opt["level5"]]
-
-    for i in range(5):
-        for j in range(percentage_table[i]):
-            batch_deblurSize.append(deblur_table[i])
-    
+    optimizer = optim.Adam(netG.parameters(), lr=opt["lr"]) # opt[beta1] not used    
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    input_image_vis = input_image_vis.to(device)
-    input_image = input_image.to(device)
-    real_frame = real_frame.to(device)
-    restored_frame = restored_frame.to(device)
+
     netG.to(device)
 
     # Training
@@ -221,13 +197,13 @@ else:
                     'model_state_dict': netG.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'loss': loss,
-                    }, f"checkpoints/checkpoint_static_{epoch}.pth")
+                    }, f"checkpoints/checkpoint_ondemand_{epoch}.pth")
 
                 # This section is to calculate the psnr from the validation dataset and redistribute the dataset accordingly
-                # netG.eval()
-                # psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
-                # ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
-                # netG.train()
+                netG.eval()
+                psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
+                ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
+                netG.train()
             
             # Print progress
             print(f"Epoch {epoch+1}/{50}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
