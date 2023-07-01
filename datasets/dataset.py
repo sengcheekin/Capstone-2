@@ -11,7 +11,7 @@ import shutil
 import random
 from PIL import Image
 import matplotlib.pyplot as plt
-from torchmetrics.functional import peak_signal_noise_ratio
+from torchmetrics.functional import peak_signal_noise_ratio, structural_similarity_index_measure
 # from haze_synthesize import gen_haze
 
 # dir_path = (
@@ -63,10 +63,26 @@ from torchmetrics.functional import peak_signal_noise_ratio
 
 # Hyperparameters
 train_dir = "datasets/data/train/clean"
-hazy_dir = "datasets/data/train/hazy"
+hazy_dir = "datasets/data/train/main"
 
-test_clean_dir = "datasets/data/test/clean"
-test_hazy_dir = "datasets/data/test/hazy"
+test_clean_dir = "datasets\data/test\clean"
+test_hazy_dir = "datasets/data/test/hazy/main"
+test_hazy_dirs = [
+    "datasets\data/test\hazy\level1",
+    "datasets\data/test\hazy\level2",
+    "datasets\data/test\hazy\level3",
+    "datasets\data/test\hazy\level4",
+    "datasets\data/test\hazy\level5",
+]
+
+val_clean_dir = "datasets/data/val/clean"
+val_hazy_dirs = [
+    "datasets/data/val/hazy/level1",
+    "datasets/data/val/hazy/level2",
+    "datasets/data/val/hazy/level3",
+    "datasets/data/val/hazy/level4",
+    "datasets/data/val/hazy/level5",
+]
 
 beta_range = [0.0, 0.6, 1.2, 1.8, 2.4, 3.0]
 transform = transforms.Compose(
@@ -108,6 +124,7 @@ def redistribute(psnr_scores, sub_directories, main_directory):
     # Copy files over from each hazy level to the main training directory according to the number of samples
     available_files = os.listdir(sub_directories[0])
     available_idx = [i for i in range(len(available_files))]
+    print(len(available_idx))
     for num_sample, sub_directory in zip(num_samples, sub_directories):
         
         # Select random files from the sub directory based on available indices
@@ -118,13 +135,15 @@ def redistribute(psnr_scores, sub_directories, main_directory):
 
         random_files = random.sample(os.listdir(sub_directory), num_sample)
         
+        available_idx = list(set(available_idx) - set(random_idx))
+        
         # Copy the selected files to the central file directory
         for file in random_files:
             file_path = os.path.join(sub_directory, file)
             shutil.copy2(file_path, main_directory)
         
-        available_idx = list(set(available_idx) - set(random_idx))
-        print(f"Number of samples taken from {sub_directory}: {num_sample}")
+        print(len(available_idx))
+    print(f"Number of samples taken: {list(zip(sub_directories, num_samples))}")
 
 def calc_avg_psnr(clean_dir, hazy_dirs, model, device):
 
@@ -132,7 +151,6 @@ def calc_avg_psnr(clean_dir, hazy_dirs, model, device):
 
     for hazy_dir in hazy_dirs:
 
-        print(hazy_dir)
         val_dataset_custom = HazyDataset(clean_dir, hazy_dir, transform=transform)
         val_dataloader_custom = DataLoader(val_dataset_custom, batch_size=10, num_workers=0, shuffle=False)
 
@@ -151,9 +169,36 @@ def calc_avg_psnr(clean_dir, hazy_dirs, model, device):
         avg_psnr = total_psnr / len(val_dataloader_custom)
         psnr_levels.append(avg_psnr)
 
-    print("Psnr levels: ", [psnr.item() for psnr in psnr_levels], "len", len(val_dataloader_custom))
+    print("Psnr levels: ", [psnr.item() for psnr in psnr_levels])
     return [psnr.item() for psnr in psnr_levels]
-        
+
+#TODO: Implement function to calculate SSIM scores (for performance evaluation) 
+def calc_avg_ssim(clean_dir, hazy_dirs, model, device):
+    
+        ssim_levels = []
+    
+        for hazy_dir in hazy_dirs:
+    
+            val_dataset_custom = HazyDataset(clean_dir, hazy_dir, transform=transform)
+            val_dataloader_custom = DataLoader(val_dataset_custom, batch_size=10, num_workers=0, shuffle=False)
+    
+            total_ssim = 0
+    
+            clean_img, hazy_img = next(iter(val_dataloader_custom))
+            clean_img = clean_img.to(device)
+            hazy_img = hazy_img.to(device)
+    
+            with torch.inference_mode():
+                output = model(hazy_img)
+            
+            ssim = structural_similarity_index_measure(output, clean_img)
+            total_ssim += ssim
+    
+            avg_ssim = total_ssim / len(val_dataloader_custom)
+            ssim_levels.append(avg_ssim)
+    
+        print("SSIM levels: ", [ssim.item() for ssim in ssim_levels])
+        return [ssim.item() for ssim in ssim_levels]
 
 class HazyDataset(Dataset):
     def __init__(self, img_dir, hazy_dir, transform=None):
@@ -163,7 +208,7 @@ class HazyDataset(Dataset):
         self.classes, self.class_idx = get_classes(img_dir) # Not sure if get_classes is needed or not
 
     def __len__(self):
-        print("img_dir:" + str(len(os.listdir(self.img_dir))), "hazy_dir:" + str(len(os.listdir(self.hazy_dir))))
+        # print("img_dir:" + str(len(os.listdir(self.img_dir))), "hazy_dir:" + str(len(os.listdir(self.hazy_dir))))
         return len(os.listdir(self.img_dir))
 
     def __getitem__(self, index):
@@ -189,7 +234,6 @@ test_dataset_custom = HazyDataset(
 train_dataloader_custom = DataLoader(train_dataset_custom, batch_size=10, num_workers=0 ,shuffle=True)
 test_dataloader_custom = DataLoader(test_dataset_custom, batch_size=10, num_workers=0 ,shuffle=True)
 
-print(len(train_dataloader_custom.dataset))
 
 def display_random_images(dataset, n=3, seed=42):
     random.seed(seed)
