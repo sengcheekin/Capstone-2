@@ -189,6 +189,7 @@ else:
     if __name__ == "__main__":
         print("Start training")
         train_time = time.time()
+        epoch_arr = [] # For plotting purposes
 
         for epoch in range(50):
             epoch_time = time.time()
@@ -211,6 +212,7 @@ else:
                 
             
             epoch_loss = running_loss / len(trainloader_custom.dataset)
+            epoch_arr.append(epoch_loss)
 
             # Save and evaluate performance on validation dataset every 5 epochs and redistribute the dataset accordingly
             if epoch % 5 == 0:
@@ -219,17 +221,18 @@ else:
                     'model_state_dict': netG.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'loss': loss,
-                    }, f"checkpoints/checkpoint_ondemand_{epoch}.pth")
+                    }, f"checkpoints/checkpoint_static_{epoch}.pth")
 
-                netG.eval()
-                psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
-                ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
-                netG.train()
+                # This section is to calculate the psnr from the validation dataset and redistribute the dataset accordingly
+                # netG.eval()
+                # psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
+                # ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
+                # netG.train()
             
             # Print progress
             print(f"Epoch {epoch+1}/{50}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
 
-            # TODO: Visualisation
+
 
 
         print("Finished Training")
@@ -243,9 +246,16 @@ else:
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': loss,
                 }, PATH)
+        
+        # Plot loss
+        plt.plot(epoch_arr)
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Training Loss')
+        plt.show()
 
 
-    # Visualisation
+    
     
 
     # def show_images(images, nmax=64):
@@ -269,7 +279,6 @@ else:
     # print("Optimizer's state_dict:")
     # for var_name in optimizer.state_dict():
     #     print(var_name, "\t", optimizer.state_dict()[var_name])
-    # TODO: FIGURE OUT HOW TO SAVE MODEL, HOW TO USE DATA LOADER
 
 # # Testing
     # test_image = Image.open("datasets/data/train/hazy/aachen_000000_000019_leftImg8bit_hazy.jpg")
