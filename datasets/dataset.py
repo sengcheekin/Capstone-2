@@ -124,7 +124,6 @@ def redistribute(psnr_scores, sub_directories, main_directory):
     # Copy files over from each hazy level to the main training directory according to the number of samples
     available_files = os.listdir(sub_directories[0])
     available_idx = [i for i in range(len(available_files))]
-    print(len(available_idx))
     for num_sample, sub_directory in zip(num_samples, sub_directories):
         
         # Select random files from the sub directory based on available indices
@@ -142,7 +141,6 @@ def redistribute(psnr_scores, sub_directories, main_directory):
             file_path = os.path.join(sub_directory, file)
             shutil.copy2(file_path, main_directory)
         
-        print(len(available_idx))
     print(f"Number of samples taken: {list(zip(sub_directories, num_samples))}")
 
 def calc_avg_psnr(clean_dir, hazy_dirs, model, device):
