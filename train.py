@@ -1,11 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
 from datasets import dataset as ds
-import util
 from matplotlib import pyplot as plt
-from torchmetrics import PeakSignalNoiseRatio as psnr
 import time
 
 opt = {

@@ -1,3 +1,5 @@
+# Code to resize and convert images to JPEG format
+
 import os
 from PIL import Image
 
@@ -23,7 +25,7 @@ def resize_and_convert_images(folder_path, output_size):
             resized_image_path = os.path.join(resized_folder_path, filename.split('.')[0] + '.jpg')
             resized_image.save(resized_image_path, 'JPEG')
 
-            print(f"Resized and converted image saved: {resized_image_path}")
+            print(f"Resized and converted image saved at: {resized_image_path}")
 
     print("Image resizing and conversion complete!")
 

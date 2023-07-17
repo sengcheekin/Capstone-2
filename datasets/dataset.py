@@ -2,15 +2,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
-import torchvision.datasets as datasets
 from torch.utils.data import Dataset, DataLoader
-import cv2 as cv
 import numpy as np
 import os
 import shutil
 import random
 from PIL import Image
-import matplotlib.pyplot as plt
 from torchmetrics.functional import peak_signal_noise_ratio, structural_similarity_index_measure
 
 
@@ -44,8 +41,6 @@ transform = transforms.Compose(
         transforms.ToTensor(),
     ]
 )
-
-
 
 # Takes in an array of scores, and redistribute the training batches inversely proportional to the scores
 def redistribute(psnr_scores, sub_directories, main_directory):
