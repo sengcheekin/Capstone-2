@@ -1,19 +1,8 @@
 import torch
 from torchvision import transforms
-from torch.utils.data import DataLoader
-from datasets import dataset as ds
 from train import netG
-from matplotlib import pyplot as plt
-from torchmetrics import PeakSignalNoiseRatio
-from torchmetrics.functional import peak_signal_noise_ratio, structural_similarity_index_measure
-import os
-import time
 import gradio as gr
 import copy
-
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-testloader_custom = ds.test_dataloader_custom
 
 # load on-demand models (trained on 25, 50, 100, 150 epochs)
 ondemand_25 = copy.deepcopy(netG)
@@ -60,9 +49,11 @@ static_50.eval()
 static_100.eval()
 static_150.eval()
 
-# Gradio interface
+# transform functions convert PIL image to tensor and vice versa
 transform = transforms.Compose([transforms.ToTensor()])
 tensor_to_image = transforms.ToPILImage()    
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Function to perform inference on all on-demand models
 def inference_ondemand(img):
@@ -94,6 +85,7 @@ def inference_static(img):
         
     return outputs_static
 
+# Gradio interface
 with gr.Blocks() as demo:
     with gr.Tab("On-Demand Learning Model"):
         gr.Markdown("## On-Demand Learning Model")

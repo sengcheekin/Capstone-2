@@ -1,6 +1,4 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
@@ -9,7 +7,6 @@ import shutil
 import random
 from PIL import Image
 from torchmetrics.functional import peak_signal_noise_ratio, structural_similarity_index_measure
-
 
 # Hyperparameters
 train_clean_dir = "datasets/data/train/clean"
@@ -42,7 +39,7 @@ transform = transforms.Compose(
     ]
 )
 
-# Takes in an array of scores, and redistribute the training batches inversely proportional to the scores
+# Takes in an array of scores, and redistribute the training dataset inversely proportional to the scores
 def redistribute(psnr_scores, sub_directories, main_directory):
     total_psnr = sum(psnr_scores)
 
@@ -163,16 +160,8 @@ class HazyDataset(Dataset):
 
         return img, hazy
     
-
+# To be used for training
 train_dataset_custom = HazyDataset(
     clean_dir=train_clean_dir, hazy_dir=train_hazy_dir, transform=transform
 )
-test_dataset_custom = HazyDataset(
-    clean_dir=test_clean_dir, hazy_dir=test_hazy_dir, transform=transform
-)
-
 train_dataloader_custom = DataLoader(train_dataset_custom, batch_size=10, num_workers=0 ,shuffle=True)
-test_dataloader_custom = DataLoader(test_dataset_custom, batch_size=10, num_workers=0 ,shuffle=True)
-
-
-# testing
