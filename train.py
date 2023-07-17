@@ -61,7 +61,7 @@ ngf = opt["ngf"]
 nef = opt["nef"]
 
 # Generator Network
-print("Initializing generator.")
+print("Initializing generator...")
 # nn.Sequential: A sequential container that add modules to it in the order they are passed in the constructor.
 netE = nn.Sequential(
     nn.Conv2d(3, nef, 4, 2, 1),
