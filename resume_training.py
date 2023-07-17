@@ -31,10 +31,11 @@ main_train_dir = "datasets/data/train/main"
 # Import DataLoader
 trainloader_custom = ds.train_dataloader_custom
 
-checkpoint = torch.load('checkpoints/checkpoint_ondemand_45.pth')
+checkpoint = torch.load('checkpoints/checkpoint_static_45.pth')
 netG.load_state_dict(checkpoint['model_state_dict'])
 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 start_epoch = checkpoint['epoch'] + 1  # Specify the epoch to continue training from
+end_epoch = 150 # Specify the epoch to end training
 
 # Loss Metrics
 criterion = nn.MSELoss()
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     train_time = time.time()
     epoch_arr = [] # For plotting purposes
 
-    for epoch in range(start_epoch, 150):
+    for epoch in range(start_epoch, end_epoch):
         epoch_time = time.time()
         running_loss = 0.0
 
@@ -80,22 +81,23 @@ if __name__ == "__main__":
                 'model_state_dict': netG.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': loss,
-                }, f"checkpoints/checkpoint_ondemand_{epoch}.pth")
+                }, f"checkpoints/checkpoint_static_{epoch}.pth")
 
             # This section is to calculate the psnr from the validation dataset and redistribute the dataset accordingly
+            # Not necessary if you do not want to redistribute the dataset
             netG.eval()
             psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
             ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
             netG.train()
         
         # Print progress
-        print(f"Epoch {epoch+1}/{50}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
+        print(f"Epoch {epoch+1}/{end_epoch}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
 
     print("Finished Training")
     print(f"Training time: {time.time() - train_time}s")
 
     # Save model and optimizer
-    PATH = "checkpoints/checkpoint_ondemand_final.pth"
+    PATH = "checkpoints/checkpoint_static_final.pth"
     torch.save({
             'epoch': epoch,
             'model_state_dict': netG.state_dict(),

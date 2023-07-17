@@ -1,9 +1,10 @@
+# Code taken and adapted from https://github.com/tranleanh/haze-synthesize/tree/master
+
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 import random
 import glob
-
 
 def get_file_name(path):
     basename = os.path.basename(path)
@@ -12,7 +13,7 @@ def get_file_name(path):
 
 
 def gen_haze(img, depth_img):
-    # needed to make it so darker areas = further distance
+    # To make it so darker areas = further distance
     max_depth_value = np.max(depth_img)
     depth_img = max_depth_value - depth_img
 
@@ -32,13 +33,13 @@ def gen_haze(img, depth_img):
     return hazy
 
 
-img_path = "datasets/data/train/clean"
-depth_path = "datasets/data/train/depth_images"
+img_path = "D:\Documents\Semester 9\Capstone 2\Code\Capstone-2\datasets\highres/clean"
+depth_path = "D:\Documents\Semester 9\Capstone 2\Code\Capstone-2\datasets\highres/depth_images"
 ext = "jpg"
 
 # Search the folder for images
 paths = glob.glob(os.path.join(img_path, "*.{}".format(ext)))
-output_dir = "datasets/data/train/hazy/level5"
+output_dir = "D:\Documents\Semester 9\Capstone 2\Code\Capstone-2\datasets\highres/hazy"
 
 if __name__ == "__main__":
     for path in paths:

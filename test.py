@@ -15,29 +15,50 @@ import copy
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 testloader_custom = ds.test_dataloader_custom
 
-checkpoint = torch.load('checkpoints/checkpoint_ondemand_final.pth')
-netG.load_state_dict(checkpoint['model_state_dict'])
+# on-demand models
+ondemand_25 = copy.deepcopy(netG)
+checkpoint_25 = torch.load('checkpoints/checkpoint_ondemand_25.pth')
+ondemand_25.load_state_dict(checkpoint_25['model_state_dict'])
 
-netG_0 = copy.deepcopy(netG)
-checkpoint_0 = torch.load('checkpoints/checkpoint_ondemand_0.pth')
-netG_0.load_state_dict(checkpoint_0['model_state_dict'])
-
-netG_50 = copy.deepcopy(netG)
+ondemand_50 = copy.deepcopy(netG)
 checkpoint_50 = torch.load('checkpoints/checkpoint_ondemand_50.pth')
-netG_50.load_state_dict(checkpoint_50['model_state_dict'])
+ondemand_50.load_state_dict(checkpoint_50['model_state_dict'])
 
-netG_100 = copy.deepcopy(netG)
+ondemand_100 = copy.deepcopy(netG)
 checkpoint_100 = torch.load('checkpoints/checkpoint_ondemand_100.pth')
-netG_100.load_state_dict(checkpoint_100['model_state_dict'])
+ondemand_100.load_state_dict(checkpoint_100['model_state_dict'])
 
-netG_150 = copy.deepcopy(netG)
+ondemand_150 = copy.deepcopy(netG)
 checkpoint_150 = torch.load('checkpoints/checkpoint_ondemand_final.pth')
-netG_150.load_state_dict(checkpoint_150['model_state_dict'])
+ondemand_150.load_state_dict(checkpoint_150['model_state_dict'])
 
-netG_0.eval()
-netG_50.eval()
-netG_100.eval()
-netG_150.eval()
+ondemand_25.eval()
+ondemand_50.eval()
+ondemand_100.eval()
+ondemand_150.eval()
+
+# static models
+static_25 = copy.deepcopy(netG)
+checkpoint_25 = torch.load('checkpoints/checkpoint_static_25.pth')
+static_25.load_state_dict(checkpoint_25['model_state_dict'])
+
+static_50 = copy.deepcopy(netG)
+checkpoint_50 = torch.load('checkpoints/checkpoint_static_50.pth')
+static_50.load_state_dict(checkpoint_50['model_state_dict'])
+
+static_100 = copy.deepcopy(netG)
+checkpoint_100 = torch.load('checkpoints/checkpoint_static_100.pth')
+static_100.load_state_dict(checkpoint_100['model_state_dict'])
+
+static_150 = copy.deepcopy(netG)
+checkpoint_150 = torch.load('checkpoints/checkpoint_static_final.pth')
+static_150.load_state_dict(checkpoint_150['model_state_dict'])
+
+static_25.eval()
+static_50.eval()
+static_100.eval()
+static_150.eval()
+
 # img_batch, hazy_batch = next(iter(testloader_custom))
 # with torch.inference_mode():
 #     output = netG(hazy_batch.to(device))
@@ -71,8 +92,8 @@ netG_150.eval()
 
 # # Show the plot
 # plt.show()
-
-# test psnr calculation
+#############################################################################
+# # test psnr calculation
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # checkpoint = torch.load('checkpoints/checkpoint_ondemand_final.pth')
 # netG.load_state_dict(checkpoint['model_state_dict'])
@@ -95,79 +116,92 @@ netG_150.eval()
 # ]
 # main_train_dir = "datasets/data/train/main"
 # start_time = time.time()
-# for i in range(20):
-# psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
+# # psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
 # ds.redistribute([5,5,5,5,5], train_hazy_dirs, main_train_dir)
 # if set(os.listdir("datasets/data/train/hazy/level1")) != set(os.listdir("datasets/data/train/main")):
 #     print("not equal")
 #     print( set(os.listdir("datasets/data/train/hazy/level1")) - set(os.listdir("datasets/data/train/main")))
 
 # print("--- %s seconds ---" % (time.time() - start_time))
-
+##############################################################################################
 # Gradio interface
 transform = transforms.Compose([transforms.ToTensor()])
 tensor_to_image = transforms.ToPILImage()    
 
-def inference(img):
+def inference_ondemand(img):
     img = transform(img)
     img = img.unsqueeze(0)
-
-    with torch.inference_mode():
-        output = netG_150(img.to(device))
-
-    output = output.detach().cpu()
-    output = torch.squeeze(output)
-    output = tensor_to_image(output)
-    return output
-
-def inference_all(img):
-    img = transform(img)
-    img = img.unsqueeze(0)
+    models = [ondemand_25, ondemand_50, ondemand_100, ondemand_150]
+    outputs_ondemand = []
     
-    with torch.inference_mode():
-        output_0 = netG_0(img.to(device))
-        output_50 = netG_50(img.to(device))
-        output_100 = netG_100(img.to(device))
+    with torch.no_grad():
+        for model in models:
+            output = model(img.to(device))
+            output = tensor_to_image(torch.squeeze(output.detach().cpu()))
+            outputs_ondemand.append(output)
         
-    output_0 = output_0.detach().cpu()
-    output_50 = output_50.detach().cpu()
-    output_100 = output_100.detach().cpu()
-
-    output_0 = torch.squeeze(output_0)
-    output_50 = torch.squeeze(output_50)
-    output_100 = torch.squeeze(output_100)
-
-    output_0 = tensor_to_image(output_0)
-    output_50 = tensor_to_image(output_50)
-    output_100 = tensor_to_image(output_100)
-
-    return output_0, output_50, output_100,
+    return outputs_ondemand
 
 
-
+def inference_static(img):
+    img = transform(img)
+    img = img.unsqueeze(0)
+    models = [static_25, static_50, static_100, static_150]
+    outputs_static = []
+    
+    with torch.no_grad():
+        for model in models:
+            output = model(img.to(device))
+            output = tensor_to_image(torch.squeeze(output.detach().cpu()))
+            outputs_static.append(output)
+        
+    return outputs_static
 
 with gr.Blocks() as demo:
-    gr.Markdown("## Image Dehazing")
-    with gr.Row():
-        input_image = gr.Image(height=256, width=256)
-        output_image = gr.Image(height=256,width=256)
-
-    button = gr.Button("Dehaze")
-    button.click(inference, inputs = input_image, outputs = output_image)
-
-    with gr.Row():
-        gr.Markdown("## 0 epochs")
-        gr.Markdown("## 50 epochs")
-        gr.Markdown("## 100 epochs")
+    with gr.Tab("On-Demand Learning Model"):
+        gr.Markdown("## On-Demand Learning Model")
+        with gr.Row():
+            input_image = gr.Image(height=256, width=256)
         
-    with gr.Row():
-        output_image_0 = gr.Image(height=256,width=256)
-        output_image_50 = gr.Image(height=256,width=256)
-        output_image_100 = gr.Image(height=256,width=256)
+        button_ondemand = gr.Button("Dehaze")
+
+        with gr.Row():
+            gr.Markdown("## 25 epochs")
+            gr.Markdown("## 50 epochs")
+            gr.Markdown("## 100 epochs")
+            gr.Markdown("## 150 epochs")
+            
+        with gr.Row():
+            output_ondemand_25 = gr.Image(height=256,width=256)
+            output_ondemand_50 = gr.Image(height=256,width=256)
+            output_ondemand_100 = gr.Image(height=256,width=256)
+            output_ondemand_150 = gr.Image(height=256,width=256)
 
 
-    button_all = gr.Button("Dehaze")
-    button_all.click(inference_all, inputs = input_image, outputs = [output_image_0, output_image_50, output_image_100])
+        button_ondemand.click(inference_ondemand, inputs = input_image, outputs = [output_ondemand_25, output_ondemand_50, output_ondemand_100, output_ondemand_150])
+
+    with gr.Tab("Static Learning Model"):
+            gr.Markdown("## Static Learning Model")
+            with gr.Row():
+                input_image = gr.Image(height=256, width=256)
+            
+            button_static = gr.Button("Dehaze")
+
+            with gr.Row():
+                gr.Markdown("## 25 epochs")
+                gr.Markdown("## 50 epochs")
+                gr.Markdown("## 100 epochs")
+                gr.Markdown("## 150 epochs")
+                
+            with gr.Row():
+                output_static_25 = gr.Image(height=256,width=256)
+                output_static_50 = gr.Image(height=256,width=256)
+                output_static_100 = gr.Image(height=256,width=256)
+                output_static_150 = gr.Image(height=256,width=256)
+
+
+            button_static.click(inference_static, inputs = input_image, outputs = [output_static_25, output_static_50, output_static_100, output_static_150])
+
 
 if __name__ == "__main__":
 

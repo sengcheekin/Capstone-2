@@ -151,10 +151,6 @@ else:
     criterion = nn.MSELoss()
 
     # Setup Solver
-    optimStateG = {
-        "lr": opt["lr"],
-        "beta1": opt["beta1"],
-    }
     optimizer = optim.Adam(netG.parameters(), lr=opt["lr"]) # opt[beta1] not used    
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -185,8 +181,7 @@ else:
 
                 # Multiply by the first dimension of the input tensor (batch) to scale the loss value to the batch size
                 running_loss += loss.item() * clean.size(0)
-                
-            
+                    
             epoch_loss = running_loss / len(trainloader_custom.dataset)
             epoch_arr.append(epoch_loss)
 
@@ -207,9 +202,6 @@ else:
             
             # Print progress
             print(f"Epoch {epoch+1}/{50}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
-
-
-
 
         print("Finished Training")
         print(f"Training time: {time.time() - train_time}s")
