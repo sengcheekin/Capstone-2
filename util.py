@@ -1,13 +1,16 @@
+# This file contains utility functions that are supposed to be used in the main training file, train.py.
+# The functions are supposed to emulate the deprecated functions in the source code.
+# Most of which are used to create the channel-wise fully connected layer.
+# However, the channel-wise fully connected layer was removed as it does not provide any significant improvement in the results.
+
+
+# Do note that the code below cannot be used as it is, as it fails to produce the same results as the deprecated functions.
+# Hence, this code was not used in the final implementation of the project, 
+# and only serves as a reference and proof of effort spent on recreating the deprecated functions.
+
 import torch
 import torch.nn as nn
 
-def load_model(model_path, gpu=False):
-    model = torch.load(model_path)
-    if gpu:
-        model = model.to("cuda")
-    return model
-
-# Contains replacement functions for deprecated functions in the source code
 class Reshape(nn.Module):
     def __init__(self, shape):
         super(Reshape, self).__init__()
@@ -17,8 +20,6 @@ class Reshape(nn.Module):
         print(x.size())
         return x.reshape(self.shape)
 
-# TODO: Determine if the argument dim is needed or not in the forward function of SplitTable and JoinTable.
-#  Currently the dim is initialized as part of the class
 class SplitTable(nn.Module):
     def __init__(self, dim):
         super(SplitTable, self).__init__()
