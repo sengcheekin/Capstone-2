@@ -1,3 +1,6 @@
+# Code to train the dehazing model. Note that this train.py script is meant to train brand new models from scracth.
+# To train the dehazing model from a checkpoint, use the resume_training.py script instead.
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -29,7 +32,7 @@ train_hazy_dirs = [
 ]
 main_train_dir = "datasets/data/train/main"
 
-# set the number of threads to 1 to avoid data loading error, and set the default tensor type to float
+# set the number of threads to 1 to avoid data loading error, and set the default tensor type to FloatTensor
 # torch.set_num_threads(1)
 torch.set_default_tensor_type("torch.FloatTensor")
 
