@@ -155,6 +155,7 @@ if __name__ == "__main__":
                 }, f"checkpoints/checkpoint_ondemand_{epoch}.pth")
 
             # This section is to calculate the psnr from the validation dataset and redistribute the dataset accordingly
+            # Not necessary if you do not want to redistribute the dataset
             netG.eval()
             psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
             ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
