@@ -10,27 +10,9 @@ from torchmetrics.functional import peak_signal_noise_ratio, structural_similari
 
 # Hyperparameters
 train_clean_dir = "datasets/data/train/clean"
+
 # train_hazy_dir = "datasets/data/train/main" # for on-demand training
 train_hazy_dir = "datasets/data/train/static" # for static training
-
-test_clean_dir = "datasets\data/test\clean"
-test_hazy_dir = "datasets/data/test/hazy/main"
-test_hazy_dirs = [
-    "datasets\data/test\hazy\level1",
-    "datasets\data/test\hazy\level2",
-    "datasets\data/test\hazy\level3",
-    "datasets\data/test\hazy\level4",
-    "datasets\data/test\hazy\level5",
-]
-
-val_clean_dir = "datasets/data/val/clean"
-val_hazy_dirs = [
-    "datasets/data/val/hazy/level1",
-    "datasets/data/val/hazy/level2",
-    "datasets/data/val/hazy/level3",
-    "datasets/data/val/hazy/level4",
-    "datasets/data/val/hazy/level5",
-]
 
 transform = transforms.Compose(
     [
@@ -160,7 +142,7 @@ class HazyDataset(Dataset):
 
         return img, hazy
     
-# To be used for training
+# Custom dataloader to be used for training
 train_dataset_custom = HazyDataset(
     clean_dir=train_clean_dir, hazy_dir=train_hazy_dir, transform=transform
 )

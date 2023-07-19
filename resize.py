@@ -1,4 +1,6 @@
 # Code to resize and convert images to JPEG format
+# For convenience, this code was written with the aid of ChatGPT, and as such may contain similar code found in other codebases.
+ 
 
 import os
 from PIL import Image

@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from torchmetrics import PeakSignalNoiseRatio as psnr
 import time
 from train import netG, optimizer
+import os
 
 val_clean_dir = "datasets/data/val/clean"
 val_hazy_dirs = [
@@ -26,16 +27,24 @@ train_hazy_dirs = [
     "datasets/data/train/hazy/level4",
     "datasets/data/train/hazy/level5",
 ]
-main_train_dir = "datasets/data/train/main"
+main_train_dir = "datasets/data/train/main" # Specify the main training directory "main" for ondemand and "static" for static
+
+
+
+model = "static"           # Specify the model type, either "ondemand" or "static"
+start_epoch = 45           # Specify the epoch to continue training from
+end_epoch = 150            # Specify the epoch to end training
+
+if not os.path.exists(f'checkpoints/checkpoint_{model}_{start_epoch}.pth'):
+    print("Checkpoint file does not exist. Please check if the checkpoint exists and try again.")
+    exit(1)
+
+checkpoint = torch.load(f'checkpoints/checkpoint_{model}_{start_epoch}.pth')
+netG.load_state_dict(checkpoint['model_state_dict'])
+optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 # Import DataLoader
 trainloader_custom = ds.train_dataloader_custom
-
-checkpoint = torch.load('checkpoints/checkpoint_static_45.pth')
-netG.load_state_dict(checkpoint['model_state_dict'])
-optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-start_epoch = checkpoint['epoch'] + 1  # Specify the epoch to continue training from
-end_epoch = 150 # Specify the epoch to end training
 
 # Loss Metrics
 criterion = nn.MSELoss()
@@ -47,7 +56,10 @@ netG.train()
 
     # Training
 if __name__ == "__main__":
-    print("Start training")
+    print("Resuming training...")
+    print("Model selected: " + model)
+    print("Starting epoch: " + str(start_epoch) + ", Ending epoch: " + str(end_epoch))
+
     train_time = time.time()
     epoch_arr = [] # For plotting purposes
 
@@ -81,14 +93,16 @@ if __name__ == "__main__":
                 'model_state_dict': netG.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': loss,
-                }, f"checkpoints/checkpoint_static_{epoch}.pth")
+                }, f"checkpoints/checkpoint_{model}_{epoch}.pth")
+            print(f"Checkpoint saved at epoch {epoch}. File path: checkpoints/checkpoint_{model}_{epoch}.pth")
 
-            # This section is to calculate the psnr from the validation dataset and redistribute the dataset accordingly
-            # Not necessary if you do not want to redistribute the dataset
-            netG.eval()
-            psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
-            ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
-            netG.train()
+
+            # This section is to calculate the psnr from the validation dataset and redistribute the dataset accordingly, if the model is ondemand
+            if model == "ondemand":
+                netG.eval()
+                psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
+                ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
+                netG.train()
         
         # Print progress
         print(f"Epoch {epoch+1}/{end_epoch}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
@@ -97,13 +111,12 @@ if __name__ == "__main__":
     print(f"Training time: {time.time() - train_time}s")
 
     # Save model and optimizer
-    PATH = "checkpoints/checkpoint_static_final.pth"
     torch.save({
             'epoch': epoch,
             'model_state_dict': netG.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
-            }, PATH)
+            }, f"checkpoints/checkpoint_{model}_final.pth")
     
     # Plot loss
     plt.plot(epoch_arr)

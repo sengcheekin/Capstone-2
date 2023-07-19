@@ -8,12 +8,12 @@ from datasets import dataset as ds
 from matplotlib import pyplot as plt
 import time
 
-opt = {
-    "nef": 64,          # number of encoder filters in first conv layer
-    "ngf": 64,          # number of generator filters in first conv layer
-    "lr": 0.0002,       # initial learning rate for adam
-    "beta1": 0.5,       # momentum term of adam
-}
+# Hyperparameters
+nef = 64             # number of encoder filters in first conv layer
+ngf = 64             # number of generator filters in first conv layer
+lr = 0.000           # initial learning rate for adam
+model = "ondemand"   # model type: ondemand or static
+epochs = 50          # number of epochs to train
 
 val_clean_dir = "datasets/data/val/clean"
 val_hazy_dirs = [
@@ -30,7 +30,7 @@ train_hazy_dirs = [
     "datasets/data/train/hazy/level4",
     "datasets/data/train/hazy/level5",
 ]
-main_train_dir = "datasets/data/train/main"
+main_train_dir = "datasets/data/train/main" # Specify the main training directory "main" for ondemand and "static" for static
 
 # set the number of threads to 1 to avoid data loading error, and set the default tensor type to FloatTensor
 # torch.set_num_threads(1)
@@ -49,7 +49,7 @@ def weights_init(m):
         None
     """
 
-    # if m is instance of Conv2d, initialize the weights of the convolutional layer with a normal distribution with mean 0 and standard deviation 0.02
+    # if m is instance of Conv2d, initialize the weights of the convolutional layer using a normal distribution with mean 0 and standard deviation 0.02
     # if layer has bias, initialize it to 0
     if isinstance(m, nn.Conv2d):
         nn.init.normal_(m.weight.data, 0.0, 0.02)
@@ -58,10 +58,6 @@ def weights_init(m):
     elif isinstance(m, nn.BatchNorm2d):
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0.0)
-
-
-ngf = opt["ngf"]
-nef = opt["nef"]
 
 # Generator Network
 print("Initializing generator...")
@@ -107,11 +103,11 @@ netG = nn.Sequential(
 
 netG.apply(weights_init)
 
-# Loss Metrics
+# Loss Metric (also called L2 loss)
 criterion = nn.MSELoss()
 
-# Setup Solver
-optimizer = optim.Adam(netG.parameters(), lr=opt["lr"]) # opt[beta1] not used    
+# Setup optimizer
+optimizer = optim.Adam(netG.parameters(), lr=lr)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -119,11 +115,12 @@ netG.to(device)
 
 # Training
 if __name__ == "__main__":
-    print("Start training")
+    print(f"Model selected: {model}, Epochs to train: {epochs}")
+    print("Starting training...")
     train_time = time.time()
     epoch_arr = [] # For plotting purposes
 
-    for epoch in range(50):
+    for epoch in range(epochs):
         epoch_time = time.time()
         running_loss = 0.0
 
@@ -152,29 +149,30 @@ if __name__ == "__main__":
                 'model_state_dict': netG.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': loss,
-                }, f"checkpoints/checkpoint_ondemand_{epoch}.pth")
+                }, f"checkpoints/checkpoint_{model}_{epoch}.pth")
+            print(f"Checkpoint saved at epoch {epoch}. File path: checkpoints/checkpoint_{model}_{epoch}.pth")
 
-            # This section is to calculate the psnr from the validation dataset and redistribute the dataset accordingly
-            # Not necessary if you do not want to redistribute the dataset
-            netG.eval()
-            psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
-            ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
-            netG.train()
+            # This section is to calculate the psnr from the validation dataset and redistribute the dataset accordingly, if the model is ondemand
+            if model == "ondemand":
+                netG.eval()
+                psnr_scores = ds.calc_avg_psnr(val_clean_dir, val_hazy_dirs, netG, device)
+                ds.redistribute(psnr_scores, train_hazy_dirs, main_train_dir)
+                netG.train()
         
         # Print progress
-        print(f"Epoch {epoch+1}/{50}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
+        print(f"Epoch {epoch+1}/{epochs}.., Loss: {epoch_loss:.4f}, Time: {time.time() - epoch_time}s ")
 
     print("Finished Training")
     print(f"Training time: {time.time() - train_time}s")
 
     # Save model and optimizer
-    PATH = "checkpoints/checkpoint_ondemand_final.pth"
     torch.save({
             'epoch': epoch,
             'model_state_dict': netG.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
-            }, PATH)
+            }, f"checkpoints/checkpoint_{model}_final.pth")
+    
     
     # Plot loss
     plt.plot(epoch_arr)
