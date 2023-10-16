@@ -11,7 +11,7 @@ import time
 # Hyperparameters
 nef = 64             # number of encoder filters in first conv layer
 ngf = 64             # number of generator filters in first conv layer
-lr = 0.000           # initial learning rate for adam
+lr = 0.001           # initial learning rate for adam
 model = "ondemand"   # model type: ondemand or static
 epochs = 50          # number of epochs to train
 
