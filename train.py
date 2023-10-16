@@ -1,4 +1,4 @@
-# Code to train the dehazing model. Note that this train.py script is meant to train brand new models from scracth.
+# Code to train the dehazing model. Note that this train.py script is meant to train brand new models from scratch.
 # To train the dehazing model from a checkpoint, use the resume_training.py script instead.
 
 import torch
